@@ -1,0 +1,35 @@
+project_id: poc-piloturl-nonprod
+region: asia-southeast1
+
+index_create:
+  dimensions: 768
+  shard_size: SHARD_SIZE_SMALL
+  distance_measure_type: DOT_PRODUCT
+  feature_norm_type: UNIT_L2_NORM
+  index_update_method: STREAM_UPDATE
+  approximate_neighbors_count: 150
+  leaf_node_embedding_count: 1000
+  leaf_nodes_to_search_percent: 5
+
+embed_data:
+  where: "TRUE"
+  column_list: []
+  dimension: 768
+  filename: part-00000
+  file_type: json
+
+streaming_update:
+  datapoints_source: gcs
+
+endpoint_create:
+  public_endpoint_enabled: true
+
+endpoint_deploy:
+  machine_type: e2-standard-2
+  min_replica_count: 1
+  max_replica_count: 1
+
+search:
+  query_type: vector
+  top_k: 10
+  restricts: []
