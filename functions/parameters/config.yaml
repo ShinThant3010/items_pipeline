@@ -13,10 +13,19 @@ index_create:
 
 embed_data:
   where: "TRUE"
-  column_list: []
+  col_to_embed: []
+  restrict_columns: []
+  numeric_restricts_columns: []
   dimension: 768
   filename: part-00000
   file_type: json
+  embedding_model_name: gemini-embedding-001
+
+embed_text:
+  dimension: 768
+  filename: part-00000
+  file_type: json
+  embedding_model_name: gemini-embedding-001
 
 streaming_update:
   datapoints_source: gcs

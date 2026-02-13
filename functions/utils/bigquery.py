@@ -19,10 +19,11 @@ def query_table(
     """
     Query a BigQuery table with a WHERE clause and return rows as dictionaries.
     """
-    client = bigquery.Client()
-    select_columns = _select_clause(column_list)
-    query = f"SELECT {select_columns} FROM `{table}` WHERE {where_clause}"
     try:
+        client = bigquery.Client()
+        select_columns = _select_clause(column_list)
+        query = f"SELECT {select_columns} FROM `{table}` WHERE {where_clause}"
+        
         return [dict(row.items()) for row in client.query(query)]
     except BadRequest as exc:
         raise ValueError(str(exc)) from exc

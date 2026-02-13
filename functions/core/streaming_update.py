@@ -2,26 +2,15 @@ from typing import Any
 
 from google.cloud import aiplatform
 from google.cloud.aiplatform_v1.types import index as gca_index
-from google.protobuf.struct_pb2 import Struct
 
 from api.exceptions import PipelineException
 from api.schemas.streaming import StreamingUpdateRequest
 from functions.utils.gcs import load_data_from_gcs_prefix
 from functions.utils.validators import apply_defaults
 
-
-def _struct_from_dict(data: dict[str, Any] | None) -> Struct | None:
-    if not data:
-        return None
-    struct = Struct()
-    struct.update(data)
-    return struct
-
-
 def _build_index_datapoints(items: list[dict[str, Any]]) -> list[gca_index.IndexDatapoint]:
     datapoints: list[gca_index.IndexDatapoint] = []
     for item in items:
-        embedding_metadata = _struct_from_dict(item.get("embedding_metadata"))
         restricts = [
             gca_index.IndexDatapoint.Restriction(
                 namespace=restrict.get("namespace", ""),
@@ -41,7 +30,6 @@ def _build_index_datapoints(items: list[dict[str, Any]]) -> list[gca_index.Index
                 feature_vector=item.get("embedding", []),
                 restricts=restricts,
                 numeric_restricts=numeric_restricts,
-                embedding_metadata=embedding_metadata,
             )
         )
     return datapoints

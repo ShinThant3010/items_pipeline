@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 
 from google.cloud import aiplatform
@@ -22,18 +23,57 @@ def _build_namespace_filters(restricts: list[dict[str, Any]] | None) -> list[Nam
     return filters
 
 
+def _extract_metadata(source: Any) -> dict[str, Any]:
+    metadata: dict[str, Any] = {}
+
+    for restriction in getattr(source, "restricts", []) or []:
+        namespace = getattr(restriction, "namespace", None) or getattr(restriction, "name", None)
+        if not namespace:
+            continue
+        allow_values = (
+            list(getattr(restriction, "allow_list", []) or [])
+            or list(getattr(restriction, "allow_tokens", []) or [])
+        )
+        metadata[namespace] = allow_values[0] if allow_values else ""
+
+    for numeric in getattr(source, "numeric_restricts", []) or []:
+        namespace = getattr(numeric, "namespace", None) or getattr(numeric, "name", None)
+        if not namespace:
+            continue
+        value_int = getattr(numeric, "value_int", None)
+        value_float = getattr(numeric, "value_float", None)
+        value_double = getattr(numeric, "value_double", None)
+        numeric_value: int | float | None = None
+        if value_int is not None:
+            numeric_value = value_int
+        elif value_float is not None:
+            numeric_value = value_float
+        elif value_double is not None:
+            numeric_value = value_double
+
+        if numeric_value is None:
+            continue
+
+        if namespace in {"created_at", "updated_at"}:
+            metadata[namespace] = datetime.fromtimestamp(
+                float(numeric_value), tz=timezone.utc
+            ).isoformat()
+        else:
+            metadata[namespace] = numeric_value
+
+    return metadata
+
+
 def _extract_neighbor(neighbor: Any) -> dict[str, Any]:
     datapoint = getattr(neighbor, "datapoint", None)
+    source = datapoint or neighbor
     if datapoint is not None:
         neighbor_id = getattr(datapoint, "datapoint_id", None) or getattr(datapoint, "id", None)
-        metadata = getattr(datapoint, "embedding_metadata", None) or getattr(datapoint, "metadata", None)
     else:
         neighbor_id = getattr(neighbor, "id", None)
-        metadata = None
 
-    score = getattr(neighbor, "distance", None)
-    if score is None:
-        score = getattr(neighbor, "score", None)
+    score = getattr(neighbor, "distance", None) or getattr(neighbor, "score", None)
+    metadata = _extract_metadata(source)
 
     return {
         "id": neighbor_id,
